@@ -450,6 +450,13 @@ function App() {
                   {room.players.length < 10 && <div className="invite-tile"><span>＋</span><strong>Arkadaşlarını çağır</strong><small>Kodu gönder: {room.room.code}</small></div>}
                 </div>
                 <div className="lobby-status"><span className="status-pulse" /> {readyCount} / {room.players.length} oyuncu hazır</div>
+                {room.players.some((player) => player.user_id !== room.viewer_id && !player.is_ready) && (
+                  <div className="lobby-nudge-panel">
+                    <div className="waiting-panel-heading"><strong>Hazır olması beklenenler</strong><span>{room.players.filter((player) => player.user_id !== room.viewer_id && !player.is_ready).length} oyuncu</span></div>
+                    <p>Herkes hazır olduğunda oyun başlayabilir. Bekleyen arkadaşlarına hatırlatma gönderebilirsin.</p>
+                    <WaitingPlayers players={room.players.filter((player) => player.user_id !== room.viewer_id && !player.is_ready)} onlineUsers={onlineUsers} onPoke={(playerId) => void pokePlayer(playerId)} emptyMessage="Herkes hazır." />
+                  </div>
+                )}
                 <div className="lobby-actions">
                   {isHost ? (
                     <button className="button button-primary start-button" disabled={busy || room.players.length < 2 || readyCount !== room.players.length} onClick={() => void withBusy(startGame)}>
@@ -505,10 +512,20 @@ function App() {
               <button className="button button-primary" onClick={handleLeave}>Lobiye dön <span>→</span></button>
             </div>
           ) : (
-            <div className="play-grid play-grid-single">
-              <section className="game-panel question-panel">
+            <div className={room.round?.phase === 'answering' && room.round.my_answer ? 'play-grid play-grid-single answer-waiting-page' : 'play-grid play-grid-single'}>
+              <section className={room.round?.phase === 'answering' && room.round.my_answer ? 'game-panel question-panel question-panel-waiting' : 'game-panel question-panel'}>
                 {room.round?.phase === 'answering' ? (
                   <>
+                    {room.round.my_answer ? (
+                      <div className="answer-waiting-heading">
+                        <div className="results-icon">⏳</div>
+                        <span className="section-kicker">CEVABIN KAYDEDİLDİ</span>
+                        <h1>Bekleme <span>odası</span></h1>
+                        <p>Blöfün kilitlendi. Diğer oyuncular cevaplarını gönderirken buradan canlı olarak takip edebilirsin.</p>
+                        <div className="question-meta"><span className="category-chip">{room.round.question?.category}</span><span className={remainingSeconds < 10 ? 'timer-badge timer-badge-urgent' : 'timer-badge'} role="timer" aria-label={`Kalan süre: ${remainingSeconds} saniye`}>◷ {remainingSeconds} sn</span></div>
+                      </div>
+                    ) : (
+                    <>
                     <div className="question-meta">
                       <span className="category-chip">{room.round.question?.category}</span>
                       <span className="difficulty">{room.round.question?.difficulty}</span>
@@ -555,6 +572,8 @@ function App() {
                           Blöfünü gönder <span>→</span>
                         </button>
                       </form>
+                    )}
+                    </>
                     )}
                   </>
                 ) : room.round?.phase === 'answer_reveal' ? (
@@ -610,17 +629,19 @@ function App() {
                       ? <RoundAnswerReveal answers={roundReveal.answers} roundNumber={room.round.round_number} />
                       : <p>Cevap sonuçları yükleniyor…</p>}
                     {room.round.personal_result && <div className="round-personal-summary">
+                      <span className="section-kicker">SENİN TUR SONUCUN</span>
                       <strong>
-                        {room.round.personal_result.answered_correctly
-                          ? 'Doğru cevabı buldun!'
-                          : room.round.personal_result.zartalandi_by.length > 0
-                            ? 'Zartalandın!'
+                        {room.round.personal_result.zartalandi_by.length > 0
+                          ? 'ZARTALANDIN!'
+                          : room.round.personal_result.answered_correctly
+                            ? 'DOĞRU BİLDİN!'
                             : room.round.personal_result.fooled_players.length > 0
-                              ? 'Blöfün tuttu!'
+                              ? 'ZARTAN TUTTU!'
                               : room.round.personal_result.has_voted
-                                ? 'Tur tamamlandı'
-                                : 'Bu tur oy kullanmadın'}
+                                ? 'TUR TAMAMLANDI'
+                                : 'BU TUR CEVAP VERMEDİN'}
                       </strong>
+                      {room.round.personal_result.answered_correctly && room.round.personal_result.fooled_players.length > 0 && <small className="personal-achievement">Ayrıca blöfün tuttu; diğer oyuncuları da kandırdın!</small>}
                       <span>{room.round.personal_result.score_delta >= 0 ? '+' : ''}{room.round.personal_result.score_delta} puan</span>
                       {room.round.personal_result.fooled_players.length > 0 && <small>
                         Blöfüne kananlar: {room.round.personal_result.fooled_players.map((player) => player.display_name).join(', ')}
