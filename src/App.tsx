@@ -327,7 +327,7 @@ function App() {
         await navigator.clipboard.writeText(inviteText)
         setMessage('Davet metni kopyalandı. Arkadaşına gönderebilirsin.')
       } else {
-        await navigator.clipboard.writeText(room.room.code)
+        throw new Error('Bu tarayıcı davet paylaşmayı veya panoya kopyalamayı desteklemiyor.')
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return
