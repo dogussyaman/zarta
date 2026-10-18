@@ -523,6 +523,7 @@ function App() {
                         <h1>Bekleme <span>odası</span></h1>
                         <p>Blöfün kilitlendi. Diğer oyuncular cevaplarını gönderirken buradan canlı olarak takip edebilirsin.</p>
                         <div className="question-meta"><span className="category-chip">{room.round.question?.category}</span><span className={remainingSeconds < 10 ? 'timer-badge timer-badge-urgent' : 'timer-badge'} role="timer" aria-label={`Kalan süre: ${remainingSeconds} saniye`}>◷ {remainingSeconds} sn</span></div>
+                        {progressMatchesRound ? <><div className="waiting-progress"><span>{answeredPlayerCount} / {room.players.length} OYUNCU CEVAP VERDİ</span><i><b style={{ width: `${room.players.length ? answeredPlayerCount / room.players.length * 100 : 0}%` }} /></i></div><WaitingPlayers players={waitingToAnswer} onlineUsers={onlineUsers} onPoke={(playerId) => void pokePlayer(playerId)} emptyMessage="Herkes cevabını gönderdi. Sonuçlar birazdan açılacak." /></> : <p className="answer-private">Oyuncu durumu yükleniyor…</p>}
                       </div>
                     ) : (
                     <>
