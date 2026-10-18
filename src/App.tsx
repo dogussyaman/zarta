@@ -317,6 +317,24 @@ function App() {
     }
   }
 
+  async function shareRoomInvite() {
+    if (!room) return
+    const inviteText = `Zarta oyunumuza katıl! Oda kodu: ${room.room.code}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Zarta Online', text: inviteText })
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(inviteText)
+        setMessage('Davet metni kopyalandı. Arkadaşına gönderebilirsin.')
+      } else {
+        await navigator.clipboard.writeText(room.room.code)
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
+      setMessage(errorMessage(error))
+    }
+  }
+
   function goHome(event: MouseEvent<HTMLAnchorElement>) {
     event.preventDefault()
     if (room) void handleLeave()
@@ -430,7 +448,7 @@ function App() {
           <div className="game-topline">
             <div>
               <button className="back-link" onClick={handleLeave}>← Ana sayfa</button>
-              <div className="room-code-line">ODA KODU <button className="room-code" onClick={() => void copyRoomCode()}>{room.room.code} <span>▣</span></button></div>
+              <div className="room-code-line">ODA KODU <button className="room-code" onClick={() => void copyRoomCode()}>{room.room.code} <span>▣</span></button> <button className="button-link room-share-button" onClick={() => void shareRoomInvite()}>Davet et ↗</button></div>
             </div>
             <div className="round-counter">
               <span className="section-kicker">{room.room.status === 'lobby' ? 'OYUN LOBİSİ' : 'OYUN DEVAM EDİYOR'}</span>
