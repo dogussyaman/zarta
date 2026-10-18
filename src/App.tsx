@@ -29,6 +29,7 @@ import { getPlayerCharacter, PLAYER_CHARACTERS } from './lib/profile'
 import type { PlayerCharacterKey } from './lib/profile'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { RoundAnswerReveal } from './components/RoundAnswerReveal'
+import { ContinueButton } from './components/ContinueButton'
 
 const SettingsSelect = lazy(() => import('./components/SettingsSelect').then((module) => ({ default: module.SettingsSelect })))
 
@@ -644,13 +645,12 @@ function App() {
                           <div className="waiting-progress">{continuedPlayerCount} / {room.players.length} oyuncu devam etmeye hazır</div>
                           {alreadyContinued
                             ? <p className="continue-confirmation">Hazırsın. Diğer oyuncular bekleniyor…</p>
-                            : <button
-                              className="button button-primary continue-button"
+                            : <ContinueButton
+                              label={room.round.round_number === room.room.total_rounds ? 'Oyunu bitir' : 'Devam et'}
+                              sentLabel="Tamam"
                               disabled={busy}
-                              onClick={() => void handleContinueAfterScoreboard()}
-                            >
-                              {room.round.round_number === room.room.total_rounds ? 'Oyunu bitir' : 'Devam et'} <span>→</span>
-                            </button>}
+                              onClick={handleContinueAfterScoreboard}
+                            />}
                           <WaitingPlayers
                             players={waitingToContinue.filter((player) => player.user_id !== room.viewer_id)}
                             onlineUsers={onlineUsers}

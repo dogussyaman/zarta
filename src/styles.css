@@ -4530,3 +4530,274 @@ body {
     top: calc(env(safe-area-inset-top) + 73px);
   }
 }
+
+.zarta-continue-button {
+  --zc-radius: 16px;
+  cursor: pointer;
+  border-radius: var(--zc-radius);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .3);
+  border: none;
+  box-shadow: 0 .5px .5px 1px rgba(255, 255, 255, .2),
+    0 10px 20px rgba(0, 0, 0, .25),
+    0 4px 5px 0 rgba(0, 0, 0, .05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all .3s ease;
+  width: 100%;
+  min-width: 220px;
+  padding: 20px;
+  height: 68px;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  overflow: hidden;
+}
+
+.zarta-continue-button:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 0 1px 2px rgba(255, 255, 255, .3),
+    0 15px 30px rgba(0, 0, 0, .35),
+    0 10px 3px -3px rgba(0, 0, 0, .04);
+}
+
+.zarta-continue-button:active:not(:disabled) {
+  transform: scale(1);
+  box-shadow: 0 0 1px 2px rgba(255, 255, 255, .3),
+    0 10px 3px -3px rgba(0, 0, 0, .2);
+}
+
+.zarta-continue-button:disabled {
+  cursor: not-allowed;
+  opacity: .65;
+}
+
+.zarta-continue-button:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--zc-radius);
+  border: 2.5px solid transparent;
+  background: linear-gradient(#fff, #e7e7e7) padding-box,
+    linear-gradient(to bottom, rgba(0, 0, 0, .1), rgba(0, 0, 0, .45)) border-box;
+  z-index: 0;
+  transition: all .4s ease;
+}
+
+.zarta-continue-button:hover:not(:disabled)::after {
+  transform: scale(1.05, 1.1);
+  box-shadow: inset 0 -1px 3px 0 rgba(255, 255, 255, 1);
+}
+
+.zarta-continue-button::before {
+  content: "";
+  inset: 7px 6px 6px 6px;
+  position: absolute;
+  background: linear-gradient(to top, #fff, #e7e7e7);
+  border-radius: 30px;
+  filter: blur(.5px);
+  z-index: 2;
+}
+
+.zarta-continue-button.is-sent {
+  --zc-primary: #18a86a;
+}
+
+.zc-state p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zc-state .zc-icon {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  transform: scale(1.25);
+  transition: all .3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zc-state .zc-icon svg {
+  overflow: visible;
+  color: var(--zc-primary, #7c3aed);
+}
+
+.zc-outline {
+  position: absolute;
+  border-radius: inherit;
+  overflow: hidden;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity .4s ease;
+  inset: -2px -3.5px;
+}
+
+.zc-outline::before {
+  content: "";
+  position: absolute;
+  inset: -100%;
+  background: conic-gradient(from 180deg, transparent 60%, white 80%, transparent 100%);
+  animation: zc-spin 2s linear infinite;
+  animation-play-state: paused;
+}
+
+@keyframes zc-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.zarta-continue-button:hover:not(:disabled) .zc-outline {
+  opacity: 1;
+}
+
+.zarta-continue-button:hover:not(:disabled) .zc-outline::before {
+  animation-play-state: running;
+}
+
+.zc-state p span {
+  display: block;
+  opacity: 0;
+  animation: zc-slide-down .8s ease forwards calc(var(--i) * .03s);
+}
+
+.zarta-continue-button:hover:not(:disabled) p span {
+  opacity: 1;
+  animation: zc-wave .5s ease forwards calc(var(--i) * .02s);
+}
+
+.zarta-continue-button:focus p span {
+  opacity: 1;
+  animation: zc-disappear .6s ease forwards calc(var(--i) * .03s);
+}
+
+@keyframes zc-wave {
+  30% { opacity: 1; transform: translateY(4px) translateX(0) rotate(0); }
+  50% { opacity: 1; transform: translateY(-3px) translateX(0) rotate(0); color: var(--zc-primary, #7c3aed); }
+  100% { opacity: 1; transform: translateY(0) translateX(0) rotate(0); }
+}
+
+@keyframes zc-slide-down {
+  0% { opacity: 0; transform: translateY(-20px) translateX(5px) rotate(-90deg); color: var(--zc-primary, #7c3aed); filter: blur(5px); }
+  30% { opacity: 1; transform: translateY(4px) translateX(0) rotate(0); filter: blur(0); }
+  50% { opacity: 1; transform: translateY(-3px) translateX(0) rotate(0); }
+  100% { opacity: 1; transform: translateY(0) translateX(0) rotate(0); }
+}
+
+@keyframes zc-disappear {
+  from { opacity: 1; }
+  to { opacity: 0; transform: translateX(5px) translateY(20px); color: var(--zc-primary, #7c3aed); filter: blur(5px); }
+}
+
+.zc-state--default .zc-icon svg {
+  animation: zc-land .6s ease forwards;
+}
+
+.zarta-continue-button:hover:not(:disabled) .zc-state--default .zc-icon {
+  transform: rotate(45deg) scale(1.25);
+}
+
+.zarta-continue-button:focus .zc-state--default svg {
+  animation: zc-take-off .8s linear forwards;
+}
+
+.zarta-continue-button:focus .zc-state--default .zc-icon {
+  transform: rotate(0) scale(1.25);
+}
+
+@keyframes zc-take-off {
+  0% { opacity: 1; }
+  60% { opacity: 1; transform: translateX(70px) rotate(45deg) scale(2); }
+  100% { opacity: 0; transform: translateX(160px) rotate(45deg) scale(0); }
+}
+
+@keyframes zc-land {
+  0% { transform: translateX(-60px) translateY(30px) rotate(-50deg) scale(2); opacity: 0; filter: blur(3px); }
+  100% { transform: translateX(0) translateY(0) rotate(0); opacity: 1; filter: blur(0); }
+}
+
+.zc-state--default .zc-icon::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  height: 2px;
+  width: 0;
+  left: -5px;
+  background: linear-gradient(to right, transparent, rgba(0, 0, 0, .5));
+}
+
+.zarta-continue-button:focus .zc-state--default .zc-icon::before {
+  animation: zc-contrail .8s linear forwards;
+}
+
+@keyframes zc-contrail {
+  0% { width: 0; opacity: 1; }
+  8% { width: 15px; }
+  60% { opacity: .7; width: 80px; }
+  100% { opacity: 0; width: 160px; }
+}
+
+.zc-state {
+  padding-left: 29px;
+  z-index: 2;
+  display: flex;
+  position: relative;
+}
+
+.zc-state--default span:nth-child(4) {
+  margin-right: 5px;
+}
+
+.zc-state--sent {
+  display: none;
+}
+
+.zc-state--sent .zc-icon svg {
+  transform: scale(1.25);
+  margin-right: 8px;
+}
+
+.zarta-continue-button:focus .zc-state--default,
+.zarta-continue-button.is-sent .zc-state--default {
+  position: absolute;
+}
+
+.zarta-continue-button:focus .zc-state--sent,
+.zarta-continue-button.is-sent .zc-state--sent {
+  display: flex;
+}
+
+.zarta-continue-button:focus .zc-state--sent span,
+.zarta-continue-button.is-sent .zc-state--sent span {
+  opacity: 0;
+  animation: zc-slide-down .8s ease forwards calc(var(--i) * .2s);
+}
+
+.zarta-continue-button:focus .zc-state--sent .zc-icon svg,
+.zarta-continue-button.is-sent .zc-state--sent .zc-icon svg {
+  opacity: 0;
+  animation: zc-appear 1.2s ease forwards .8s;
+}
+
+@keyframes zc-appear {
+  0% { opacity: 0; transform: scale(4) rotate(-40deg); color: var(--zc-primary, #7c3aed); filter: blur(4px); }
+  30% { opacity: 1; transform: scale(.6); filter: blur(1px); }
+  50% { opacity: 1; transform: scale(1.2); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 680px) {
+  .zarta-continue-button {
+    min-width: unset;
+    padding: 16px;
+    height: 60px;
+    font-size: 16px;
+  }
+}
