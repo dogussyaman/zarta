@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "github": {
+      "enabled": true
+    },
+    "context7": {
+      "enabled": true
+    },
+    "shaders": {
+      "enabled": true
+    }
+  }
+}
