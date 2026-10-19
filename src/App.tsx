@@ -61,6 +61,7 @@ function App() {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([])
   const [showSettings, setShowSettings] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [homeTab, setHomeTab] = useState<'play' | 'how' | 'categories'>('play')
 
   const refresh = useCallback(async (expectedRoomId?: string) => {
     if (!supabase) return
@@ -420,26 +421,54 @@ function App() {
               </div>
               <span className="live-badge"><i /> ÇEVRİM İÇİ OYUN</span>
             </div>
-            <ol className="quick-steps" aria-label="Oyun nasıl oynanır">
-              {['Odaya katıl', 'Soruyu oku', 'Blöfünü yaz', 'Gerçeği seç'].map((step, index) => (
-                <li key={step}><span>{String(index + 1).padStart(2, '0')}</span>{step}</li>
-              ))}
-            </ol>
-            <label className="field-label" htmlFor="player-name">Oyuncu adın</label>
-            <input id="player-name" className="text-input" maxLength={24} minLength={2} placeholder="Sana nasıl seslenelim?" value={name} onChange={(event) => setName(event.target.value)} />
-            {!isSupabaseConfigured && <p className="setup-notice">Önce Supabase bağlantısı kurulmalı. `.env.example` dosyasını `.env` olarak kopyalayıp proje anahtarlarını gir.</p>}
-            <form onSubmit={handleJoin} className="join-form">
-              <label className="field-label" htmlFor="room-code">Oda kodun var mı?</label>
-              <div className="join-row">
-                <input id="room-code" className="text-input code-input" maxLength={6} placeholder="ÖRN. Z4RTA2" value={code} onChange={(event) => setCode(event.target.value.toUpperCase().replace(/[^A-Z2-9]/g, ''))} aria-label="Oda kodu" />
-                <button className="button button-secondary join-button" disabled={!isSupabaseConfigured || busy} type="submit">Katıl <span>↗</span></button>
+            <div className="home-tabs" role="tablist" aria-label="Zarta ana menü">
+              <button type="button" role="tab" id="home-tab-play" aria-selected={homeTab === 'play'} aria-controls="home-panel-play" className={homeTab === 'play' ? 'home-tab active' : 'home-tab'} onClick={() => setHomeTab('play')}>Oyna</button>
+              <button type="button" role="tab" id="home-tab-how" aria-selected={homeTab === 'how'} aria-controls="home-panel-how" className={homeTab === 'how' ? 'home-tab active' : 'home-tab'} onClick={() => setHomeTab('how')}>Nasıl oynanır?</button>
+              <button type="button" role="tab" id="home-tab-categories" aria-selected={homeTab === 'categories'} aria-controls="home-panel-categories" className={homeTab === 'categories' ? 'home-tab active' : 'home-tab'} onClick={() => setHomeTab('categories')}>Kategoriler</button>
+            </div>
+            {homeTab === 'play' ? (
+              <div className="home-tab-panel home-tab-panel-enter" role="tabpanel" id="home-panel-play" aria-labelledby="home-tab-play">
+                <ol className="quick-steps" aria-label="Oyun nasıl oynanır">
+                  {['Odaya katıl', 'Soruyu oku', 'Blöfünü yaz', 'Gerçeği seç'].map((step, index) => (
+                    <li key={step}><span>{String(index + 1).padStart(2, '0')}</span>{step}</li>
+                  ))}
+                </ol>
+                <label className="field-label" htmlFor="player-name">Oyuncu adın</label>
+                <input id="player-name" className="text-input" maxLength={24} minLength={2} placeholder="Sana nasıl seslenelim?" value={name} onChange={(event) => setName(event.target.value)} />
+                {!isSupabaseConfigured && <p className="setup-notice">Önce Supabase bağlantısı kurulmalı. `.env.example` dosyasını `.env` olarak kopyalayıp proje anahtarlarını gir.</p>}
+                <form onSubmit={handleJoin} className="join-form">
+                  <label className="field-label" htmlFor="room-code">Oda kodun var mı?</label>
+                  <div className="join-row">
+                    <input id="room-code" className="text-input code-input" maxLength={6} placeholder="ÖRN. Z4RTA2" value={code} onChange={(event) => setCode(event.target.value.toUpperCase().replace(/[^A-Z2-9]/g, ''))} aria-label="Oda kodu" />
+                    <button className="button button-secondary join-button" disabled={!isSupabaseConfigured || busy} type="submit">Katıl <span>↗</span></button>
+                  </div>
+                </form>
+                <div className="or-divider"><span /> ya da yeni bir masa aç <span /></div>
+                <button className="button button-primary create-button" disabled={!isSupabaseConfigured || busy} onClick={() => setShowSettings(true)}>
+                  <span className="button-plus">＋</span> Oda oluştur <span className="button-arrow">→</span>
+                </button>
+                <div className="card-foot"><span>◈ Ücretsiz</span><span>✦ Hesap açmak yok</span><span>⌁ Mobil uyumlu</span></div>
               </div>
-            </form>
-            <div className="or-divider"><span /> ya da yeni bir masa aç <span /></div>
-            <button className="button button-primary create-button" disabled={!isSupabaseConfigured || busy} onClick={() => setShowSettings(true)}>
-              <span className="button-plus">＋</span> Oda oluştur <span className="button-arrow">→</span>
-            </button>
-            <div className="card-foot"><span>◈ Ücretsiz</span><span>✦ Hesap açmak yok</span><span>⌁ Mobil uyumlu</span></div>
+            ) : homeTab === 'how' ? (
+              <div className="home-tab-panel home-tab-panel-enter how-to-panel" role="tabpanel" id="home-panel-how" aria-labelledby="home-tab-how">
+                <div className="how-to-intro"><span className="section-kicker">KISA KURALLAR</span><h3>Doğruyu bil, blöfü yakala.</h3><p>Her turda gerçek cevabı bulmaya çalışırken arkadaşlarının uydurduğu cevaplara da kanmamaya çalış.</p></div>
+                <ol className="how-to-list">
+                  <li><span>01</span><div><strong>Soruyu oku</strong><p>Herkese aynı genel kültür sorusu gelir.</p></div></li>
+                  <li><span>02</span><div><strong>Blöfünü yaz</strong><p>Gerçekmiş gibi duran, yaratıcı bir yanlış cevap üret.</p></div></li>
+                  <li><span>03</span><div><strong>Gerçeği seç</strong><p>Cevaplar karışınca doğru olanı bul; blöflere dikkat!</p></div></li>
+                  <li><span>04</span><div><strong>Puanları topla</strong><p>Doğru seçim ve başarılı blöfler skorunu yükseltir.</p></div></li>
+                </ol>
+                <button className="button button-primary create-button" disabled={!isSupabaseConfigured || busy} onClick={() => setHomeTab('play')}>Hemen oyna <span className="button-arrow">→</span></button>
+              </div>
+            ) : (
+              <div className="home-tab-panel home-tab-panel-enter categories-panel" role="tabpanel" id="home-panel-categories" aria-labelledby="home-tab-categories">
+                <div className="how-to-intro"><span className="section-kicker">SORU HAVUZU</span><h3>Her tur başka bir konu.</h3><p>Oda kurarken bir kategori seç; yeni turlarda farklı sorularla kapışın.</p></div>
+                <div className="category-showcase">
+                  {CATEGORIES.map((item, index) => <span className="category-showcase-chip" key={item}><i>{['✦','♟','♫','◈','⌁','⚡','✺','◎','☕'][index % 9]}</i>{item}</span>)}
+                </div>
+                <button className="button button-primary create-button" disabled={!isSupabaseConfigured || busy} onClick={() => setShowSettings(true)}>Kategori seç ve oda kur <span className="button-arrow">→</span></button>
+              </div>
+            )}
           </section>
           <div className="home-bottom"><span>ARKADAŞLARLA DAHA GÜZEL OYNANIR</span><span className="bottom-note">En iyi yanlış cevap, hiç verilmemiş olandır.</span></div>
         </section>
