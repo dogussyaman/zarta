@@ -5230,3 +5230,49 @@ body {
   .entry-card { border-radius: 22px; }
   .hero-proof { flex-wrap: wrap; }
 }
+
+
+/* Arcade skin applied across every multiplayer screen, inspired by the user's mobile-game reference */
+.app-shell:has(.game-layout) {
+  background: radial-gradient(ellipse 60% 42% at 50% 0%, rgba(91,52,214,.23), transparent 72%), radial-gradient(ellipse 40% 35% at 0% 65%, rgba(255,92,159,.12), transparent 70%), radial-gradient(ellipse 42% 40% at 100% 80%, rgba(40,190,255,.14), transparent 70%), #100d20;
+}
+.app-shell:has(.game-layout)::before { content:""; position:absolute; inset:82px 0 0; z-index:-1; pointer-events:none; opacity:.15; background-image:radial-gradient(rgba(255,255,255,.3) 1px,transparent 1px); background-size:24px 24px; }
+.game-panel { border:1px solid rgba(137,112,255,.34); border-radius:24px; background:linear-gradient(155deg,rgba(68,39,145,.78),rgba(25,31,91,.91) 58%,rgba(14,31,69,.96)); box-shadow:0 18px 48px rgba(3,6,25,.35),inset 0 1px rgba(255,255,255,.12); }
+.side-panel { background:linear-gradient(155deg,rgba(35,148,224,.2),rgba(38,23,91,.72)); }
+.panel-title-row h2,.side-panel h3,.question-content h1,.results-state h2 { color:#fff; text-shadow:0 2px 16px rgba(0,0,0,.18); }
+.section-kicker { color:#a9eaff; }
+.player-tile,.invite-tile { border:1px solid rgba(112,203,255,.25); border-radius:17px; background:linear-gradient(150deg,rgba(43,119,220,.34),rgba(93,46,177,.3)); box-shadow:inset 0 1px rgba(255,255,255,.07); }
+.player-tile:nth-child(4n+1) { background:linear-gradient(145deg,rgba(255,131,82,.2),rgba(93,46,177,.25)); }
+.player-tile:nth-child(4n+2) { background:linear-gradient(145deg,rgba(255,207,78,.17),rgba(38,107,201,.25)); }
+.player-tile:nth-child(4n+3) { background:linear-gradient(145deg,rgba(66,225,215,.16),rgba(91,46,177,.25)); }
+.player-tile>strong { color:#fff; }
+.ready-label.is-ready { color:#8affb9; }
+.category-chip { color:#fff; border-radius:999px; border-color:rgba(106,224,255,.28); background:rgba(47,167,230,.14); }
+.category-chip:nth-child(3n+2) { border-color:rgba(255,214,91,.3); background:rgba(255,193,61,.13); }
+.category-chip:nth-child(3n) { border-color:rgba(255,131,190,.3); background:rgba(255,87,162,.13); }
+.room-code { color:#fff; border-color:rgba(255,213,91,.45); border-radius:10px; background:linear-gradient(120deg,rgba(255,181,64,.18),rgba(149,91,255,.2)); }
+.button-primary,.start-button { color:#20143b; background:linear-gradient(110deg,#ffe16b,#ff9d69 52%,#ff79b2); box-shadow:0 9px 24px rgba(255,125,133,.22),inset 0 1px rgba(255,255,255,.65); }
+.button-primary:hover:not(:disabled),.start-button:hover:not(:disabled) { filter:saturate(1.15) brightness(1.06); box-shadow:0 13px 30px rgba(255,125,133,.3); }
+.button-secondary { color:#baf7ff; border-color:rgba(86,222,255,.35); background:linear-gradient(120deg,rgba(37,184,229,.2),rgba(111,76,220,.22)); }
+.text-input { color:#fff; border-color:rgba(155,194,255,.25); border-radius:13px; background:rgba(7,12,39,.38); }
+.text-input:focus { border-color:#66e6ff; box-shadow:0 0 0 3px rgba(73,207,255,.12); }
+.question-panel { background:linear-gradient(155deg,rgba(78,43,168,.85),rgba(20,42,110,.94)); }
+.question-meta .difficulty { color:#ffe18a; }
+.question-overline { color:#8feaff; }
+.answer-input { min-height:116px; border-radius:16px; }
+.answer-card,.answer-choice { border:1px solid rgba(143,201,255,.26); border-radius:17px; background:linear-gradient(145deg,rgba(48,111,207,.32),rgba(87,45,166,.28)); color:#fff; }
+.answer-choice:nth-child(4n+1) { border-color:rgba(255,208,89,.3); }
+.answer-choice-selected { border-color:#ffe16b!important; background:linear-gradient(140deg,rgba(255,203,72,.25),rgba(124,67,211,.32))!important; box-shadow:0 0 0 2px rgba(255,218,92,.12); }
+.choice-number { color:#25163d; background:linear-gradient(135deg,#ffe16b,#ff9a78); border-radius:9px; }
+.choice-action { color:#9deeff; }
+.results-icon { display:grid; place-items:center; width:64px; height:64px; border-radius:22px; background:linear-gradient(145deg,#ffdb67,#ff8bb5); box-shadow:0 12px 28px rgba(255,134,157,.22); }
+.round-personal-summary,.continue-panel,.lobby-nudge-panel { border:1px solid rgba(112,201,255,.24); border-radius:19px; background:linear-gradient(145deg,rgba(33,137,219,.2),rgba(92,45,166,.23)); }
+.round-personal-summary strong { color:#ffe16b; }
+.round-score-entry,.score-row { border-color:rgba(137,195,255,.2); border-radius:15px; background:linear-gradient(120deg,rgba(39,110,199,.2),rgba(96,48,171,.18)); }
+.round-score-entry.is-you,.score-row.is-you { border-color:rgba(255,219,94,.5); background:linear-gradient(120deg,rgba(255,198,66,.17),rgba(111,69,201,.22)); }
+.round-score-rank,.score-rank { color:#ffe16b; }
+.round-points { color:#8fffc0; }
+.poke-button { border-color:rgba(255,135,183,.35); color:#ffd0e5; background:rgba(255,87,160,.12); }
+.settings-modal { border-color:rgba(142,112,255,.38); background:linear-gradient(155deg,#352078,#171c50 75%); box-shadow:0 30px 90px rgba(0,0,0,.5); }
+.category-choice { border-radius:17px; }
+@media(max-width:680px) { .game-panel { padding:18px; border-radius:20px; } .player-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .game-layout { padding-top:20px; } }
