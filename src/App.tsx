@@ -33,7 +33,68 @@ import { ContinueButton } from './components/ContinueButton'
 
 const SettingsSelect = lazy(() => import('./components/SettingsSelect').then((module) => ({ default: module.SettingsSelect })))
 
-const CATEGORY_ART_IDS = ['culture', 'animals', 'fashion', 'film', 'music', 'science', 'history', 'sports', 'food'] as const
+
+const CATEGORY_CARDS_DATA: Record<Category, {
+  image: string
+  icon: string
+  badge?: string
+  accentColor: string
+}> = {
+  'Genel kültür': {
+    image: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=400&q=80',
+    icon: '📚',
+    badge: 'KLASİK',
+    accentColor: '#3b82f6',
+  },
+  'Hayvanlar âlemi': {
+    image: 'https://images.unsplash.com/photo-1534188753412-3e26d0d618d6?auto=format&fit=crop&w=400&q=80',
+    icon: '🦁',
+    badge: 'POPÜLER',
+    accentColor: '#eab308',
+  },
+  'Spor': {
+    image: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=400&q=80',
+    icon: '🏋️',
+    badge: 'PREMIUM',
+    accentColor: '#f97316',
+  },
+  'Müzik': {
+    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80',
+    icon: '🎵',
+    badge: 'CANLI',
+    accentColor: '#ec4899',
+  },
+  'Bilim ve teknoloji': {
+    image: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=400&q=80',
+    icon: '🔬',
+    badge: 'BİLİM',
+    accentColor: '#14b8a6',
+  },
+  'Film ve dizi': {
+    image: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=400&q=80',
+    icon: '🎬',
+    badge: 'SİNEMA',
+    accentColor: '#8b5cf6',
+  },
+  'Tarih ve coğrafya': {
+    image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=400&q=80',
+    icon: '🏛️',
+    badge: 'TARİH',
+    accentColor: '#d97706',
+  },
+  'Yemek ve lezzet': {
+    image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80',
+    icon: '🍕',
+    badge: 'LEZZET',
+    accentColor: '#ef4444',
+  },
+  'Moda ve stil': {
+    image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=400&q=80',
+    icon: '👗',
+    badge: 'TREND',
+    accentColor: '#a855f7',
+  },
+}
 
 function App() {
   const [room, setRoom] = useState<RoomState | null>(null)
@@ -196,6 +257,16 @@ function App() {
 
   const winner = useMemo(() => [...(room?.players ?? [])].sort((a, b) => b.score - a.score)[0], [room?.players])
   const isHost = room?.viewer_id === room?.room.host_id
+  const otherPlayers = useMemo(
+    () => room?.players.filter((player) => player.user_id !== room?.viewer_id) ?? [],
+    [room?.players, room?.viewer_id]
+  )
+  const allOthersReady = otherPlayers.length > 0 && otherPlayers.every((player) => player.is_ready)
+  const myPlayer = useMemo(
+    () => room?.players.find((player) => player.user_id === room?.viewer_id),
+    [room?.players, room?.viewer_id]
+  )
+  const isMyReady = myPlayer?.is_ready ?? false
   const readyCount = room?.players.filter((player) => player.is_ready).length ?? 0
   const progressMatchesRound = roundProgress?.round_number === room?.round?.round_number
   const answeredPlayerIds = new Set(progressMatchesRound ? roundProgress?.answered_player_ids : [])
@@ -209,6 +280,7 @@ function App() {
     ? room?.players.filter((player) => !continuedPlayerIds.has(player.user_id)) ?? []
     : []
   const alreadyContinued = progressMatchesRound && continuedPlayerIds.has(room?.viewer_id ?? '')
+
   async function withBusy(action: () => Promise<unknown>) {
     setBusy(true)
     setMessage('')
@@ -220,6 +292,38 @@ function App() {
     } finally {
       setBusy(false)
     }
+  }
+
+  // Room host is automatically ready by default in the lobby; auto-sync if not ready
+  useEffect(() => {
+    if (!room || room.room.status !== 'lobby' || !isHost || busy) return
+    const hostPlayer = room.players.find((p) => p.user_id === room.viewer_id)
+    if (hostPlayer && !hostPlayer.is_ready) {
+      void setReady(true).then(() => {
+        void broadcastRoomRefresh(room.room.id, 'ready').catch(() => {})
+        if (supabase) void refresh(room.room.id)
+      }).catch(() => {})
+    }
+  }, [room?.room.status, room?.players, isHost, room?.room.id, busy, refresh])
+
+  async function handleToggleReady(targetReady?: boolean) {
+    if (!room) return
+    const nextReady = typeof targetReady === 'boolean' ? targetReady : !isMyReady
+    await withBusy(async () => {
+      await setReady(nextReady)
+      void broadcastRoomRefresh(room.room.id, 'ready').catch(() => {})
+    })
+  }
+
+  async function handleHostStart() {
+    if (!room) return
+    await withBusy(async () => {
+      if (!isMyReady) {
+        await setReady(true)
+      }
+      await startGame()
+      void broadcastRoomRefresh(room.room.id, 'start').catch(() => {})
+    })
   }
 
   async function pokePlayer(targetId: string) {
@@ -350,24 +454,39 @@ function App() {
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
       <header className="topbar">
-        <a className="brand" href="#" onClick={goHome} aria-label="Zarta ana sayfa">
-          <span className="brand-mark">Z</span>
-          <span>ZARTA<span className="brand-online">ONLINE</span></span>
-        </a>
-        <div className="topbar-right">
-          <button
-            className="profile-trigger"
-            aria-label={`Profili düzenle: ${name || 'oyuncu'}`}
-            onClick={openProfile}
-          >
-            <PlayerAvatar avatarKey={avatarKey} />
-            <span>PROFİL</span>
-          </button>
-          <div className={`connection-chip ${connection}`}>
-            <span className="connection-dot" />
-            {connectionText(connection)}
+        <div className="topbar-main">
+          <a className="brand" href="#" onClick={goHome} aria-label="Zarta ana sayfa">
+            <span className="brand-mark">Z</span>
+            <span className="brand-title">ZARTA</span>
+          </a>
+
+          <div className="game-stat-bar" aria-label="Oyuncu kaynakları">
+            <div className="stat-pill stat-energy" title="Enerji: 5/10">
+              <span className="stat-icon">⚡</span>
+              <span className="stat-val">5/10</span>
+            </div>
+            <div className="stat-pill stat-gems" title="Elmas: 500">
+              <span className="stat-icon">💎</span>
+              <span className="stat-val">500</span>
+            </div>
+            <div className="stat-pill stat-coins" title="Altın: 500">
+              <span className="stat-icon">🟡</span>
+              <span className="stat-val">500</span>
+            </div>
           </div>
-          <button className="icon-button" aria-label="Oyun kurallarını aç" onClick={() => setShowSettings(true)}>☼</button>
+
+          <div className="topbar-actions">
+            <button
+              className="profile-trigger"
+              aria-label={`Profili düzenle: ${name || 'oyuncu'}`}
+              onClick={openProfile}
+              title="Profil"
+            >
+              <PlayerAvatar avatarKey={avatarKey} />
+              <span className="profile-name-text">{name || 'PROFİL'}</span>
+            </button>
+            <button className="icon-button settings-btn" aria-label="Oyun kurallarını aç" onClick={() => setShowSettings(true)} title="Ayarlar">⚙️</button>
+          </div>
         </div>
       </header>
 
@@ -393,140 +512,489 @@ function App() {
 
       {!room ? (
         <section className="home-layout">
-          <div className="hero-copy">
-            <div className="eyebrow"><span className="eyebrow-spark">✦</span> ARKADAŞLARINLA, HER YERDEN</div>
-            <h1>Biraz bilgi.<br /><span>Bolca zarta.</span></h1>
-            <p className="hero-description">Doğru cevabı bul, inandırıcı blöfünü yaz, arkadaşlarını yakala. Oyun başlasın.</p>
-            <div className="hero-proof">
-              <div className="proof-icon" aria-hidden="true">✦</div>
-              <span><strong>2–10 oyuncu</strong><br />aynı odada, her cihazda</span>
-              <span className="proof-divider" />
-              <span className="proof-latency"><i /> Gerçek zamanlı</span>
+          {/* Featured Section with 3D Purple Ribbon */}
+          <div className="featured-section">
+            <div className="game-ribbon ribbon-purple">
+              <span className="ribbon-text">EN YENİLER</span>
             </div>
-            <div className="hero-decor" aria-hidden="true">
-              <span className="orbit orbit-one" />
-              <span className="orbit orbit-two" />
-              <span className="float-token token-star">✦</span>
-              <span className="float-token token-bolt">ϟ</span>
-              <span className="float-token token-z">Z</span>
-              <span className="orbit-core">Z!</span>
+            <div
+              className="featured-card"
+              style={{
+                backgroundImage: "linear-gradient(145deg, rgba(22, 163, 74, 0.88) 0%, rgba(21, 128, 61, 0.94) 100%), url('https://images.unsplash.com/photo-1512389142860-9c449e58a543?auto=format&fit=crop&w=600&q=80')",
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            >
+              <div className="featured-card-badge">ÖZEL KATEGORİ</div>
+              <div className="featured-card-body">
+                <div className="featured-card-info">
+                  <h3 className="featured-card-title">Zarta Partisi!</h3>
+                  <p className="featured-card-desc">Arkadaşlarınla gerçek zamanlı zartalaşma vakti.</p>
+                  <button
+                    type="button"
+                    className="featured-play-btn"
+                    onClick={() => setShowSettings(true)}
+                  >
+                    <span>⚡ OYUNU BAŞLAT</span>
+                  </button>
+                </div>
+                <div className="featured-card-mascot" aria-hidden="true">
+                  <div className="mascot-face">🎅</div>
+                  <div className="mascot-star star-1">✦</div>
+                  <div className="mascot-star star-2">★</div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <section className="entry-card">
-            <div className="card-heading">
-              <div>
-                <span className="section-kicker">KATIL VE KARIŞTIR</span>
-                <h2>4 adımda Zarta</h2>
-              </div>
-              <span className="live-badge"><i /> ÇEVRİM İÇİ OYUN</span>
+          {/* Main Action Section with 3D Purple Ribbon */}
+          <section className="entry-card game-arcade-card">
+            <div className="game-ribbon ribbon-purple">
+              <span className="ribbon-text">KATEGORİLER & OYNA</span>
             </div>
+
             <div className="home-tabs" role="tablist" aria-label="Zarta ana menü">
-              <button type="button" role="tab" id="home-tab-play" aria-selected={homeTab === 'play'} aria-controls="home-panel-play" className={homeTab === 'play' ? 'home-tab active' : 'home-tab'} onClick={() => setHomeTab('play')}>Oyna</button>
-              <button type="button" role="tab" id="home-tab-how" aria-selected={homeTab === 'how'} aria-controls="home-panel-how" className={homeTab === 'how' ? 'home-tab active' : 'home-tab'} onClick={() => setHomeTab('how')}>Nasıl oynanır?</button>
-              <button type="button" role="tab" id="home-tab-categories" aria-selected={homeTab === 'categories'} aria-controls="home-panel-categories" className={homeTab === 'categories' ? 'home-tab active' : 'home-tab'} onClick={() => setHomeTab('categories')}>Kategoriler</button>
+              <button
+                type="button"
+                role="tab"
+                id="home-tab-play"
+                aria-selected={homeTab === 'play'}
+                aria-controls="home-panel-play"
+                className={homeTab === 'play' ? 'home-tab active' : 'home-tab'}
+                onClick={() => setHomeTab('play')}
+              >
+                Oyna
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="home-tab-categories"
+                aria-selected={homeTab === 'categories'}
+                aria-controls="home-panel-categories"
+                className={homeTab === 'categories' ? 'home-tab active' : 'home-tab'}
+                onClick={() => setHomeTab('categories')}
+              >
+                Kategoriler
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="home-tab-how"
+                aria-selected={homeTab === 'how'}
+                aria-controls="home-panel-how"
+                className={homeTab === 'how' ? 'home-tab active' : 'home-tab'}
+                onClick={() => setHomeTab('how')}
+              >
+                Nasıl Oynanır?
+              </button>
             </div>
+
             {homeTab === 'play' ? (
               <div className="home-tab-panel home-tab-panel-enter" role="tabpanel" id="home-panel-play" aria-labelledby="home-tab-play">
-                <ol className="quick-steps" aria-label="Oyun nasıl oynanır">
-                  {['Odaya katıl', 'Soruyu oku', 'Blöfünü yaz', 'Gerçeği seç'].map((step, index) => (
-                    <li key={step}><span>{String(index + 1).padStart(2, '0')}</span>{step}</li>
-                  ))}
-                </ol>
-                <label className="field-label" htmlFor="player-name">Oyuncu adın</label>
-                <input id="player-name" className="text-input" maxLength={24} minLength={2} placeholder="Sana nasıl seslenelim?" value={name} onChange={(event) => setName(event.target.value)} />
-                {!isSupabaseConfigured && <p className="setup-notice">Önce Supabase bağlantısı kurulmalı. `.env.example` dosyasını `.env` olarak kopyalayıp proje anahtarlarını gir.</p>}
+                <div className="game-field-group">
+                  <label className="field-label" htmlFor="player-name">
+                    OYUNCU ADIN
+                  </label>
+                  <div className="game-input-wrap">
+                    <span className="game-input-icon">👤</span>
+                    <input
+                      id="player-name"
+                      className="text-input game-text-input"
+                      maxLength={24}
+                      minLength={2}
+                      placeholder="Sana nasıl seslenelim?"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                    />
+                    {name && (
+                      <button
+                        type="button"
+                        className="input-clear-btn"
+                        onClick={() => setName('')}
+                        aria-label="Adı temizle"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {!isSupabaseConfigured && (
+                  <p className="setup-notice">Önce Supabase bağlantısı kurulmalı. `.env.example` dosyasını `.env` olarak kopyalayıp proje anahtarlarını gir.</p>
+                )}
+
                 <form onSubmit={handleJoin} className="join-form">
-                  <label className="field-label" htmlFor="room-code">Oda kodun var mı?</label>
+                  <label className="field-label" htmlFor="room-code">
+                    ODA KODUN VAR MI?
+                  </label>
                   <div className="join-row">
-                    <input id="room-code" className="text-input code-input" maxLength={6} placeholder="ÖRN. Z4RTA2" value={code} onChange={(event) => setCode(event.target.value.toUpperCase().replace(/[^A-Z2-9]/g, ''))} aria-label="Oda kodu" />
-                    <button className="button button-secondary join-button" disabled={!isSupabaseConfigured || busy} type="submit">Katıl <span>↗</span></button>
+                    <div className="game-input-wrap code-wrap">
+                      <span className="game-input-icon">🔑</span>
+                      <input
+                        id="room-code"
+                        className="text-input code-input game-text-input"
+                        maxLength={6}
+                        placeholder="ÖRN. Z4RTA2"
+                        value={code}
+                        onChange={(event) => setCode(event.target.value.toUpperCase().replace(/[^A-Z2-9]/g, ''))}
+                        aria-label="Oda kodu"
+                      />
+                      {code && (
+                        <button
+                          type="button"
+                          className="input-clear-btn"
+                          onClick={() => setCode('')}
+                          aria-label="Kodu temizle"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      className="button button-blue-3d join-button"
+                      disabled={!isSupabaseConfigured || busy || !code.trim()}
+                      type="submit"
+                    >
+                      <span>KATIL ↗</span>
+                    </button>
                   </div>
                 </form>
-                <div className="or-divider"><span /> ya da yeni bir masa aç <span /></div>
-                <button className="button button-primary create-button" disabled={!isSupabaseConfigured || busy} onClick={() => setShowSettings(true)}>
-                  <span className="button-plus">＋</span> Oda oluştur <span className="button-arrow">→</span>
+
+                <div className="or-divider">
+                  <span className="divider-line" />
+                  <span className="divider-label">YA DA YENİ BİR MASA AÇ</span>
+                  <span className="divider-line" />
+                </div>
+
+                <button
+                  className="button button-green-3d big-play-button"
+                  disabled={!isSupabaseConfigured || busy}
+                  onClick={() => setShowSettings(true)}
+                >
+                  <span className="btn-lightning">⚡</span>
+                  <span className="btn-text">OYUN OLUŞTUR</span>
                 </button>
-                <div className="card-foot"><span>◈ Ücretsiz</span><span>✦ Hesap açmak yok</span><span>⌁ Mobil uyumlu</span></div>
+
+                <div className="card-foot">
+                  <span>◈ Ücretsiz</span>
+                  <span>✦ Hesap Açmak Yok</span>
+                  <span>📱 Mobil Uyumlu</span>
+                </div>
               </div>
-            ) : homeTab === 'how' ? (
-              <div className="home-tab-panel home-tab-panel-enter how-to-panel" role="tabpanel" id="home-panel-how" aria-labelledby="home-tab-how">
-                <div className="how-to-intro"><span className="section-kicker">KISA KURALLAR</span><h3>Doğruyu bil, blöfü yakala.</h3><p>Her turda gerçek cevabı bulmaya çalışırken arkadaşlarının uydurduğu cevaplara da kanmamaya çalış.</p></div>
-                <ol className="how-to-list">
-                  <li><span>01</span><div><strong>Soruyu oku</strong><p>Herkese aynı genel kültür sorusu gelir.</p></div></li>
-                  <li><span>02</span><div><strong>Blöfünü yaz</strong><p>Gerçekmiş gibi duran, yaratıcı bir yanlış cevap üret.</p></div></li>
-                  <li><span>03</span><div><strong>Gerçeği seç</strong><p>Cevaplar karışınca doğru olanı bul; blöflere dikkat!</p></div></li>
-                  <li><span>04</span><div><strong>Puanları topla</strong><p>Doğru seçim ve başarılı blöfler skorunu yükseltir.</p></div></li>
-                </ol>
-                <button className="button button-primary create-button" disabled={!isSupabaseConfigured || busy} onClick={() => setHomeTab('play')}>Hemen oyna <span className="button-arrow">→</span></button>
+            ) : homeTab === 'categories' ? (
+              <div className="home-tab-panel home-tab-panel-enter categories-panel" role="tabpanel" id="home-panel-categories" aria-labelledby="home-tab-categories">
+                <div className="category-arcade-grid">
+                  {CATEGORIES.map((catName) => {
+                    const data = CATEGORY_CARDS_DATA[catName]
+                    const isSelected = category === catName
+                    return (
+                      <button
+                        key={catName}
+                        type="button"
+                        className={`category-arcade-card ${isSelected ? 'category-card-selected' : ''}`}
+                        style={{
+                          backgroundImage: `url(${data.image})`,
+                          borderColor: isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.22)',
+                        }}
+                        onClick={() => {
+                          setCategory(catName)
+                          setShowSettings(true)
+                        }}
+                      >
+                        <div className="category-card-overlay" />
+                        <div className="cat-card-top">
+                          <span className="cat-card-glass-icon">{data.icon}</span>
+                          {data.badge && (
+                            <span className="cat-card-badge" style={{ backgroundColor: data.accentColor }}>
+                              {data.badge}
+                            </span>
+                          )}
+                        </div>
+                        <div className="cat-card-bottom">
+                          <span className="cat-card-title">{catName}</span>
+                          <span className="cat-card-play-arrow">▶</span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+                <button
+                  className="button button-green-3d big-play-button"
+                  style={{ marginTop: '14px' }}
+                  onClick={() => setShowSettings(true)}
+                >
+                  <span className="btn-lightning">⚡</span>
+                  <span className="btn-text">OYUN OLUŞTUR</span>
+                </button>
               </div>
             ) : (
-              <div className="home-tab-panel home-tab-panel-enter categories-panel" role="tabpanel" id="home-panel-categories" aria-labelledby="home-tab-categories">
-                <div className="how-to-intro"><span className="section-kicker">SORU HAVUZU</span><h3>Her tur başka bir konu.</h3><p>Oda kurarken bir kategori seç; yeni turlarda farklı sorularla kapışın.</p></div>
-                <div className="category-showcase">
-                  {CATEGORIES.map((item, index) => <span className="category-showcase-chip" key={item}><i>{['✦','♟','♫','◈','⌁','⚡','✺','◎','☕'][index % 9]}</i>{item}</span>)}
-                </div>
-                <button className="button button-primary create-button" disabled={!isSupabaseConfigured || busy} onClick={() => setShowSettings(true)}>Kategori seç ve oda kur <span className="button-arrow">→</span></button>
+              <div className="home-tab-panel home-tab-panel-enter how-to-panel" role="tabpanel" id="home-panel-how" aria-labelledby="home-tab-how">
+                <ol className="arcade-steps-list">
+                  <li>
+                    <span className="arcade-step-num">01</span>
+                    <div>
+                      <strong>Odaya Katıl</strong>
+                      <p>Kodu yazarak arkadaşlarına katıl veya yeni masa aç.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="arcade-step-num">02</span>
+                    <div>
+                      <strong>Soruyu Oku</strong>
+                      <p>Herkes aynı genel kültür sorusunu aynı anda görür.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="arcade-step-num">03</span>
+                    <div>
+                      <strong>Blöfünü Yaz</strong>
+                      <p>Herkesi kandıracak inandırıcı bir yalan cevap uydur.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="arcade-step-num">04</span>
+                    <div>
+                      <strong>Gerçeği Seç & Zartala</strong>
+                      <p>Doğruya +1; blöfüne inanan her oyuncu için +2 puan kap!</p>
+                    </div>
+                  </li>
+                </ol>
+                <button
+                  className="button button-green-3d big-play-button"
+                  onClick={() => setHomeTab('play')}
+                >
+                  <span className="btn-lightning">⚡</span>
+                  <span className="btn-text">HEMEN OYNA</span>
+                </button>
               </div>
             )}
           </section>
-          <div className="home-bottom"><span>ARKADAŞLARLA DAHA GÜZEL OYNANIR</span><span className="bottom-note">En iyi yanlış cevap, hiç verilmemiş olandır.</span></div>
+
+          <div className="home-bottom-tagline">
+            <span className="tagline-star">✦</span>
+            <span>Başka bir kullanıcıyı zartalamak doğru cevap vermekten daha çok kazandırır!</span>
+          </div>
         </section>
       ) : (
         <section className="game-layout">
-          <div className="game-topline">
-            <div>
-              <button className="back-link" onClick={handleLeave}>← Ana sayfa</button>
-              <div className="room-code-line">ODA KODU <button className="room-code" onClick={() => void copyRoomCode()}>{room.room.code} <span>▣</span></button> <button className="button-link room-share-button" onClick={() => void shareRoomInvite()}>Davet et ↗</button></div>
-            </div>
-            <div className="round-counter">
-              <span className="section-kicker">{room.room.status === 'lobby' ? 'OYUN LOBİSİ' : 'OYUN DEVAM EDİYOR'}</span>
-              {room.room.current_round > 0 && <strong>Tur {room.room.current_round}<span> / {room.room.total_rounds}</span></strong>}
-            </div>
-          </div>
-
           {room.room.status === 'lobby' ? (
-            <div className="lobby-grid">
-              <section className="game-panel lobby-panel">
-                <div className="panel-title-row">
-                  <div><span className="section-kicker">MASA HAZIR</span><h2>Oyuncular</h2></div>
-                  <span className="player-count">{room.players.length}<span> / 10</span></span>
+            <div className="lobby-arcade-container">
+              {/* Clean Lobby Nav Header */}
+              <div className="lobby-nav-header">
+                <button className="back-link-btn" onClick={handleLeave}>
+                  ‹ Ana sayfa
+                </button>
+                <div className="lobby-nav-center">
+                  <span className="lobby-title-badge">OYUN LOBİSİ</span>
                 </div>
-                <div className="player-grid">
-                  {room.players.map((player) => <PlayerTile key={player.user_id} player={player} isOnline={onlineUsers.includes(player.user_id)} />)}
-                  {room.players.length < 10 && <div className="invite-tile"><span>＋</span><strong>Arkadaşlarını çağır</strong><small>Kodu gönder: {room.room.code}</small></div>}
+                <div className="lobby-nav-actions">
+                  <button className="icon-button settings-btn" onClick={() => setShowSettings(true)} title="Oyun Ayarları">⚙️</button>
                 </div>
-                <div className="lobby-status"><span className="status-pulse" /> {readyCount} / {room.players.length} oyuncu hazır</div>
-                {room.players.some((player) => player.user_id !== room.viewer_id && !player.is_ready) && (
-                  <div className="lobby-nudge-panel">
-                    <div className="waiting-panel-heading"><strong>Hazır olması beklenenler</strong><span>{room.players.filter((player) => player.user_id !== room.viewer_id && !player.is_ready).length} oyuncu</span></div>
-                    <p>Herkes hazır olduğunda oyun başlayabilir. Bekleyen arkadaşlarına hatırlatma gönderebilirsin.</p>
-                    <WaitingPlayers players={room.players.filter((player) => player.user_id !== room.viewer_id && !player.is_ready)} onlineUsers={onlineUsers} onPoke={(playerId) => void pokePlayer(playerId)} emptyMessage="Herkes hazır." />
+              </div>
+
+              {/* Top Banner with Room Code and Quick Action */}
+              <div className="lobby-top-card">
+                <div className="lobby-code-group">
+                  <span className="lobby-code-label">ODA KODU</span>
+                  <div className="lobby-code-pill">
+                    <strong className="lobby-code-text">{room.room.code}</strong>
+                    <button
+                      type="button"
+                      className="lobby-copy-btn"
+                      onClick={() => void copyRoomCode()}
+                      title="Kodu Kopyala"
+                    >
+                      📋
+                    </button>
                   </div>
-                )}
-                <div className="lobby-actions">
-                  {isHost ? (
-                    <button className="button button-primary start-button" disabled={busy || room.players.length < 2 || readyCount !== room.players.length} onClick={() => void withBusy(startGame)}>
-                      Oyunu başlat <span>→</span>
-                    </button>
-                  ) : (
-                    <button className={`button ${room.players.find((player) => player.user_id === room.viewer_id)?.is_ready ? 'button-secondary' : 'button-primary'} start-button`} disabled={busy} onClick={() => void withBusy(() => setReady(!room.players.find((player) => player.user_id === room.viewer_id)?.is_ready))}>
-                      {room.players.find((player) => player.user_id === room.viewer_id)?.is_ready ? 'Hazırım ✓' : 'Hazır ol'} <span>→</span>
-                    </button>
-                  )}
-                  <button className="button-link" onClick={() => setShowSettings(true)}>Oyun ayarları <span>↗</span></button>
+                  <button
+                    type="button"
+                    className="button button-blue-3d lobby-share-btn"
+                    onClick={() => void shareRoomInvite()}
+                  >
+                    <span>DAVET ET ↗</span>
+                  </button>
                 </div>
-              </section>
-              <aside className="game-panel side-panel">
-                <span className="section-kicker">BU OYUNDA</span>
-                <h3>Kurallar belli.<br />Dostluklar şüpheli.</h3>
-                <RuleLine icon="◉" title={`${room.room.total_rounds} tur`} detail={`${room.room.question_seconds} saniyede cevabını ver`} />
-                <RuleLine icon="✦" title="Doğru cevabı bul +1" detail="Gerçek cevabı seç" />
-                <RuleLine icon="↗" title="Blöfün tutarsa +2" detail="Her kandırdığın oyuncu için" />
-                <div className="category-mini"><span className="section-kicker">KATEGORİLER</span><div>{room.room.categories.map((category) => <span className="category-chip" key={category}>{category}</span>)}</div></div>
-              </aside>
+
+                <div className="lobby-quick-meta">
+                  <span className="meta-pill">⏱️ {room.room.question_seconds} sn</span>
+                  <span className="meta-pill">🎯 {room.room.categories.join(', ')}</span>
+                  <button className="lobby-settings-link" onClick={() => setShowSettings(true)}>
+                    ⚙️ Ayarlar
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Lobby Arcade Grid */}
+              <div className="lobby-grid">
+                <section className="game-panel lobby-panel arcade-panel">
+                  {/* Round Track / Tur Sayısı (Yellow Ribbon) */}
+                  <div className="lobby-rounds-section">
+                    <div className="game-ribbon ribbon-gold">
+                      <span className="ribbon-text">TUR SAYISI: {room.room.total_rounds} TUR</span>
+                    </div>
+                    <div className="round-step-track" aria-label="Tur sayısı göstergesi">
+                      <div className="track-line" />
+                      {[3, 5, 7, 10, 15, 20].map((num) => {
+                        const isSelected = room.room.total_rounds === num
+                        return (
+                          <div key={num} className={`round-step-node ${isSelected ? 'active' : ''}`}>
+                            <div className="step-knob">{isSelected ? '●' : ''}</div>
+                            <span className="step-num">{num}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Players Section (Blue Ribbon) */}
+                  <div className="lobby-players-section">
+                    <div className="game-ribbon ribbon-blue">
+                      <span className="ribbon-text">MASADAKİ OYUNCULAR ({room.players.length}/10)</span>
+                    </div>
+
+                    <div className="player-grid arcade-player-grid">
+                      {room.players.map((player) => (
+                        <PlayerTile
+                          key={player.user_id}
+                          player={player}
+                          isOnline={onlineUsers.includes(player.user_id)}
+                          isViewer={player.user_id === room.viewer_id}
+                          onToggleReady={() => void handleToggleReady()}
+                        />
+                      ))}
+                      {/* Generous empty slots to give realistic arcade party room feel */}
+                      {Array.from({ length: Math.max(1, Math.min(4, 8 - room.players.length)) }).map((_, idx) => (
+                        <button
+                          key={`invite-slot-${idx}`}
+                          type="button"
+                          className="invite-tile arcade-invite-tile"
+                          onClick={() => void shareRoomInvite()}
+                          title="Arkadaşını davet et"
+                        >
+                          <div className="invite-avatar-circle">＋</div>
+                          <strong className="invite-title">{idx === 0 ? 'Davet Et' : 'Boş Koltuk'}</strong>
+                          <small className="invite-code">{room.room.code}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Ready progress & Waiting Nudge */}
+                  <div className="lobby-status-banner">
+                    <div className="lobby-status-bar">
+                      <span className="status-pulse" />
+                      <strong>{readyCount} / {room.players.length} Oyuncu Hazır</strong>
+                    </div>
+                  </div>
+
+                  {room.players.some((player) => player.user_id !== room.viewer_id && !player.is_ready) && (
+                    <div className="lobby-nudge-panel">
+                      <div className="waiting-panel-heading">
+                        <strong>Hazır olması beklenenler</strong>
+                        <span>{room.players.filter((player) => player.user_id !== room.viewer_id && !player.is_ready).length} oyuncu</span>
+                      </div>
+                      <WaitingPlayers
+                        players={room.players.filter((player) => player.user_id !== room.viewer_id && !player.is_ready)}
+                        onlineUsers={onlineUsers}
+                        onPoke={(playerId) => void pokePlayer(playerId)}
+                        emptyMessage="Herkes hazır."
+                      />
+                    </div>
+                  )}
+
+                  {/* Main Action Button */}
+                  <div className="lobby-actions">
+                    {isHost ? (
+                      <div className="host-actions-wrapper">
+                        <button
+                          className="button button-green-3d big-play-button"
+                          disabled={busy || room.players.length < 2 || !allOthersReady}
+                          onClick={() => void handleHostStart()}
+                        >
+                          <span className="btn-lightning">⚡</span>
+                          <span className="btn-text">
+                            {room.players.length < 2
+                              ? 'EN AZ 2 OYUNCU GEREKİYOR'
+                              : !allOthersReady
+                                ? 'DİĞER OYUNCULARIN HAZIR OLMASI BEKLENİYOR'
+                                : 'OYUNU BAŞLAT'}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`host-ready-toggle-btn ${isMyReady ? 'is-ready' : ''}`}
+                          disabled={busy}
+                          onClick={() => void handleToggleReady()}
+                          title="Hazır durumunu manuel değiştir"
+                        >
+                          {isMyReady ? '✓ Hazırsın (Değiştir)' : '⚡ Hazır Ol'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className={`button ${myPlayer?.is_ready ? 'button-secondary' : 'button-green-3d'} big-play-button`}
+                        disabled={busy}
+                        onClick={() => void handleToggleReady()}
+                      >
+                        <span className="btn-lightning">{myPlayer?.is_ready ? '✓' : '⚡'}</span>
+                        <span className="btn-text">
+                          {myPlayer?.is_ready ? 'HAZIRSIN (İPTAL ET)' : 'HAZIR OL'}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </section>
+
+                {/* Side Rules & Summary Panel */}
+                <aside className="game-panel side-panel arcade-side-panel">
+                  <div className="game-ribbon ribbon-purple side-ribbon">
+                    <span className="ribbon-text">BU MASADA</span>
+                  </div>
+                  <div className="side-rules-content">
+                    <RuleLine icon="◉" title={`${room.room.total_rounds} Tur`} detail={`${room.room.question_seconds} saniyede cevabını ver`} />
+                    <RuleLine icon="✦" title="Doğru Cevap: +1 Puan" detail="Gerçek cevabı bulan kazanır" />
+                    <RuleLine icon="⚡" title="Zarta Blöfü: +2 Puan" detail="Kandırdığın her oyuncu için" />
+                  </div>
+                  <div className="category-mini">
+                    <span className="section-kicker">KATEGORİ</span>
+                    <div className="lobby-category-badge-list">
+                      {room.room.categories.map((cat) => {
+                        const catData = CATEGORY_CARDS_DATA[cat as Category]
+                        return (
+                          <div
+                            key={cat}
+                            className="lobby-cat-card"
+                            style={{
+                              backgroundImage: catData ? `linear-gradient(180deg, rgba(15,23,42,0.4) 0%, rgba(10,14,38,0.92) 100%), url(${catData.image})` : undefined,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            }}
+                          >
+                            {catData && <span className="cat-icon-badge">{catData.icon}</span>}
+                            <span className="cat-card-name">{cat}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </aside>
+              </div>
             </div>
-          ) : room.room.status === 'countdown' ? (
+          ) : (
+            <>
+              <div className="game-topline">
+                <div>
+                  <button className="back-link" onClick={handleLeave}>← Ana sayfa</button>
+                  <div className="room-code-line">ODA KODU <button className="room-code" onClick={() => void copyRoomCode()}>{room.room.code} <span>▣</span></button> <button className="button-link room-share-button" onClick={() => void shareRoomInvite()}>Davet et ↗</button></div>
+                </div>
+                <div className="round-counter">
+                  <span className="section-kicker">OYUN DEVAM EDİYOR</span>
+                  {room.room.current_round > 0 && <strong>Tur {room.room.current_round}<span> / {room.room.total_rounds}</span></strong>}
+                </div>
+              </div>
+
+              {room.room.status === 'countdown' ? (
             <div className="countdown-layout">
               <div className="countdown-orb">{remainingSeconds > 0 ? remainingSeconds : '✦'}</div>
               <span className="section-kicker">İLK SORU GELİYOR</span>
@@ -736,7 +1204,9 @@ function App() {
               </section>
             </div>
           )}
-        </section>
+        </>
+      )}
+    </section>
       )}
 
       <footer className="footer"><span>© ZARTA ONLINE</span><span>İYİ OYUNLAR, TATLI REKABETLER <b>✦</b></span><span className={`footer-status ${connection}`}>{footerConnectionText(connection)} <i /></span></footer>
@@ -822,26 +1292,33 @@ function App() {
               <fieldset className="category-fieldset">
                 <legend className="field-label category-label">Kategori <small>Bir tane seç</small></legend>
                 <div className="category-picker" role="radiogroup" aria-label="Oyun kategorisi">
-                  {CATEGORIES.map((item, index) => (
-                    <label
-                      className={`category-choice category-card category-card-${index + 1}${category === item ? ' active' : ''}`}
-                      key={item}
-                    >
-                      <input
-                        className="category-radio"
-                        type="radio"
-                        name="room-category"
-                        value={item}
-                        checked={category === item}
-                        onChange={() => setCategory(item)}
-                      />
-                      <svg className="category-art" aria-hidden="true" viewBox="0 0 360 140" preserveAspectRatio="xMidYMid slice">
-                        <use href={`/category-art.svg#${CATEGORY_ART_IDS[index]}`} />
-                      </svg>
-                      <span className="category-name">{item}</span>
-                      <span className="category-selected" aria-hidden="true">✓</span>
-                    </label>
-                  ))}
+                  {CATEGORIES.map((item) => {
+                    const data = CATEGORY_CARDS_DATA[item]
+                    const isSelected = category === item
+                    return (
+                      <label
+                        className={`category-choice category-card ${isSelected ? 'active' : ''}`}
+                        key={item}
+                        style={{
+                          backgroundImage: `linear-gradient(180deg, rgba(15,23,42,0.3) 0%, rgba(10,14,38,0.88) 100%), url(${data.image})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }}
+                      >
+                        <input
+                          className="category-radio"
+                          type="radio"
+                          name="room-category"
+                          value={item}
+                          checked={isSelected}
+                          onChange={() => setCategory(item)}
+                        />
+                        <span className="modal-cat-icon" aria-hidden="true">{data.icon}</span>
+                        <span className="category-name">{item}</span>
+                        <span className="category-selected" aria-hidden="true">✓</span>
+                      </label>
+                    )
+                  })}
                 </div>
               </fieldset>
               <button className="button button-primary modal-submit" disabled={!isSupabaseConfigured || busy} type="submit">{busy ? 'Oda kuruluyor…' : 'Odayı oluştur'} <span>→</span></button>
@@ -868,16 +1345,37 @@ function PlayerAvatar({ avatarKey }: { avatarKey: PlayerCharacterKey }) {
   >{character.emoji}</span>
 }
 
-function PlayerTile({ player, isOnline }: { player: RoomState['players'][number]; isOnline: boolean }) {
-  return <div className="player-tile">
-    <div className="player-avatar-wrap">
-      <PlayerAvatar avatarKey={player.avatar_key} />
-      {player.is_host && <span className="host-crown">♛</span>}
-      <span className={`online-indicator ${isOnline ? 'online' : ''}`} title={isOnline ? 'Çevrim içi' : 'Bağlantı bekleniyor'} />
+function PlayerTile({
+  player,
+  isOnline,
+  isViewer,
+  onToggleReady,
+}: {
+  player: RoomState['players'][number]
+  isOnline: boolean
+  isViewer?: boolean
+  onToggleReady?: () => void
+}) {
+  return (
+    <div
+      className={`player-tile arcade-player-tile ${player.is_ready ? 'player-is-ready' : ''} ${isViewer ? 'is-viewer-tile' : ''}`}
+      onClick={isViewer && onToggleReady ? onToggleReady : undefined}
+      title={isViewer ? 'Hazır durumunu değiştirmek için tıkla' : undefined}
+    >
+      <div className="player-avatar-wrap arcade-avatar-wrap">
+        <PlayerAvatar avatarKey={player.avatar_key} />
+        {player.is_host && <span className="host-crown" title="Oda Kurucusu">👑</span>}
+        <span className={`online-indicator ${isOnline ? 'online' : ''}`} title={isOnline ? 'Çevrim içi' : 'Bağlantı bekleniyor'} />
+      </div>
+      <strong className="player-display-name">
+        {player.display_name}
+        {isViewer && <small className="player-you-tag"> (SEN)</small>}
+      </strong>
+      <span className={`ready-label ${player.is_ready ? 'is-ready' : ''}`}>
+        <i />{player.is_ready ? '✓ HAZIR' : 'BEKLİYOR'}
+      </span>
     </div>
-    <strong>{player.display_name}</strong>
-    <span className={`ready-label ${player.is_ready ? 'is-ready' : ''}`}><i />{player.is_ready ? 'HAZIR' : 'BEKLİYOR'}</span>
-  </div>
+  )
 }
 
 function WaitingPlayers({
@@ -975,16 +1473,6 @@ function errorMessage(error: unknown): string {
   return message || 'Bir sorun oluştu. Bağlantını kontrol edip yeniden dene.'
 }
 
-function connectionText(connection: string) {
-  switch (connection) {
-    case 'connected': return 'BAĞLANTI AKTİF'
-    case 'ready': return 'OYUNA HAZIR'
-    case 'loading': return 'BAĞLANIYOR'
-    case 'reconnecting': return 'YENİDEN BAĞLANIYOR'
-    case 'unconfigured': return 'KURULUM GEREKLİ'
-    default: return 'BAĞLANTI YOK'
-  }
-}
 
 function footerConnectionText(connection: string) {
   if (connection === 'connected') return 'GERÇEK ZAMANLI BAĞLI'

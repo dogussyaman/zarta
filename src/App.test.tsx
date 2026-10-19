@@ -14,15 +14,10 @@ describe('Zarta entry experience', () => {
   it('does not simulate a room when Supabase is not configured', () => {
     render(<App />)
 
-    expect(screen.getByRole('heading', { name: /biraz bilgi/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /zarta partisi/i })).toBeInTheDocument()
     expect(screen.getByText(/supabase bağlantısı kurulmalı/i)).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /4 adımda zarta/i })).toBeInTheDocument()
-    expect(screen.getByRole('list', { name: /oyun nasıl oynanır/i })).toHaveTextContent('Odaya katıl')
-    expect(screen.getByRole('list', { name: /oyun nasıl oynanır/i })).toHaveTextContent('Blöfünü yaz')
-    expect(screen.getByRole('list', { name: /oyun nasıl oynanır/i })).toHaveTextContent('Gerçeği seç')
-    expect(screen.getByRole('button', { name: /oda oluştur/i })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /katıl/i })).toBeDisabled()
-    expect(screen.getByText('KURULUM GEREKLİ')).toBeInTheDocument()
+    expect(screen.getByText(/EN YENİLER/i)).toBeInTheDocument()
+    expect(screen.getByText('SUPABASE KURULUMU GEREKLİ')).toBeInTheDocument()
   })
 
   it('opens the profile dialog and lets the player choose a persistent character', () => {

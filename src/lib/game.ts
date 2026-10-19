@@ -236,7 +236,9 @@ export function subscribeToRoom(
   return channel
 }
 
-export async function broadcastRoomRefresh(roomId: string, action: 'answer' | 'ability' | 'vote' | 'continue'): Promise<void> {
+export type RoomRefreshAction = 'ready' | 'start' | 'answer' | 'ability' | 'vote' | 'continue'
+
+export async function broadcastRoomRefresh(roomId: string, action: RoomRefreshAction): Promise<void> {
   const channel = roomChannels.get(roomId)
   if (!channel || channel.state !== 'joined') return
   const status = await channel.send({
