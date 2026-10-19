@@ -5110,3 +5110,123 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hero-game-toast { animation: none !important; }
 }
+
+
+/* Homepage refresh: playful, colorful game-brand language inspired by the supplied mobile-game screens */
+.app-shell:has(.home-layout) {
+  background:
+    radial-gradient(ellipse 38% 42% at 7% 23%, rgba(255, 116, 68, .16), transparent 72%),
+    radial-gradient(ellipse 38% 45% at 90% 18%, rgba(45, 190, 255, .15), transparent 70%),
+    radial-gradient(ellipse 44% 40% at 72% 92%, rgba(160, 55, 255, .16), transparent 72%),
+    #100d1c;
+}
+.app-shell:has(.home-layout)::before {
+  content: "";
+  position: absolute;
+  inset: 100px 0 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .22;
+  background-image: radial-gradient(rgba(255,255,255,.24) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+}
+.home-layout { position: relative; }
+.hero-copy .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 206, 91, .25);
+  border-radius: 999px;
+  color: #ffe19a;
+  background: rgba(255, 183, 55, .09);
+}
+.eyebrow-spark { color: #ffbd48; }
+.hero-copy h1 {
+  letter-spacing: -.065em;
+  text-shadow: 0 7px 32px rgba(0,0,0,.2);
+}
+.hero-copy h1 span {
+  color: transparent;
+  background: linear-gradient(95deg, #ffb34f 0%, #ff7e9f 36%, #b99aff 67%, #62e8ee 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+.hero-description { max-width: 440px; }
+.hero-proof .proof-icon {
+  color: #1d1830;
+  background: linear-gradient(135deg, #ffcf5b, #ff8a72);
+  box-shadow: 0 5px 20px rgba(255,143,93,.25);
+}
+.entry-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(151, 132, 255, .3);
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(111, 71, 229, .19), transparent 48%),
+    linear-gradient(145deg, rgba(35, 29, 60, .98), rgba(18, 19, 38, .98));
+}
+.entry-card::after {
+  content: "Z!";
+  position: absolute;
+  right: -17px;
+  top: 44px;
+  z-index: 0;
+  color: rgba(255,255,255,.025);
+  font: 900 150px/.8 var(--font-display);
+  transform: rotate(13deg);
+  pointer-events: none;
+}
+.entry-card > * { position: relative; z-index: 1; }
+.card-heading h2 { letter-spacing: -.045em; }
+.quick-steps li {
+  border-color: rgba(255,255,255,.08);
+  background: linear-gradient(100deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+}
+.quick-steps li:nth-child(1) > span { color: #2a1836; background: #ff9bb8; }
+.quick-steps li:nth-child(2) > span { color: #30220c; background: #ffd56c; }
+.quick-steps li:nth-child(3) > span { color: #102e3c; background: #6fe5ef; }
+.quick-steps li:nth-child(4) > span { color: #1f163a; background: #b7a0ff; }
+.create-button {
+  color: #171326;
+  background: linear-gradient(100deg, #ffd45f, #ff9b7b 48%, #ff83b0);
+  box-shadow: 0 9px 26px rgba(255, 139, 128, .2), inset 0 1px rgba(255,255,255,.6);
+}
+.create-button:hover:not(:disabled) {
+  filter: saturate(1.12) brightness(1.04);
+  box-shadow: 0 13px 34px rgba(255, 139, 128, .28), inset 0 1px rgba(255,255,255,.7);
+}
+.button-plus {
+  display: inline-grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 9px;
+  color: #fff;
+  background: rgba(35, 23, 54, .78);
+}
+.button-arrow { font-size: 1.2em; }
+.join-button {
+  border-color: rgba(101,232,237,.25);
+  color: #a5f6f5;
+  background: rgba(56, 195, 205, .09);
+}
+.category-showcase-chip {
+  border-radius: 11px;
+  color: #fff;
+  border-color: rgba(255,255,255,.12);
+  background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.025));
+}
+.category-showcase-chip:nth-child(4n+1) { border-color: rgba(255,153,105,.25); background: rgba(255,132,82,.09); }
+.category-showcase-chip:nth-child(4n+2) { border-color: rgba(112,220,244,.23); background: rgba(72,199,231,.08); }
+.category-showcase-chip:nth-child(4n+3) { border-color: rgba(191,151,255,.25); background: rgba(155,105,245,.09); }
+.category-showcase-chip:nth-child(4n) { border-color: rgba(255,219,104,.23); background: rgba(255,203,67,.07); }
+.home-bottom > span:first-child { color: #a9a2bf; }
+.bottom-note { color: #e6d5ff; }
+@media (max-width: 680px) {
+  .app-shell:has(.home-layout) { padding-inline: 18px; }
+  .hero-copy h1 { font-size: clamp(2.65rem, 13vw, 4.2rem); }
+  .entry-card { border-radius: 22px; }
+  .hero-proof { flex-wrap: wrap; }
+}
