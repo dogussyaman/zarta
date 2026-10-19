@@ -410,6 +410,8 @@ function App() {
               <span className="float-token token-bolt">ϟ</span>
               <span className="float-token token-z">Z</span>
               <span className="orbit-core">Z!</span>
+              <span className="hero-game-toast toast-bluff"><i>✦</i><span><strong>Blöf yakalandı!</strong><small>Oyuncular seçim yaptı</small></span><b>+2</b></span>
+              <span className="hero-game-toast toast-truth"><i>✓</i><span><strong>Doğru cevap</strong><small>Tur puanın yükseldi</small></span><b>+1</b></span>
             </div>
           </div>
 
